@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>空氣品質數據</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+            color: white;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #00bcd4;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar .menu {
+            display: flex;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            cursor: pointer; /* 讓表格欄位看起來可以點擊 */
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            margin-bottom: 20px;
+            width: 300px;
+        }
+
+        .loading {
+            font-size: 18px;
+            color: #007bff;
+        }
+
+        .content {
+            margin-top: 20px;
+            padding: 0 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">API-Get應用及Json資料</div>
+        <nav class="menu">
+            <a href="index.html">Home</a>
+            <a href="stock.html">股市</a>
+            <a href="Air.html">空氣品質</a>
+            <a href="Brokerage.html">ETF</a>
+        </nav>
+    </header>
+
+    <div class="content">
+        <h1>空氣品質數據查詢</h1>
+        
+        <label for="searchInput">搜尋測站名稱或縣市：</label>
+        <input type="text" id="searchInput" placeholder="輸入測站名稱或縣市搜尋" onkeyup="searchData()">
+        
+        <div id="loadingMessage" class="loading">正在載入數據...</div>
+
+        <table id="dataTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('sitename')">測站名稱</th>
+                    <th onclick="sortTable('county')">縣市</th>
+                    <th onclick="sortTable('aqi')">空氣品質指標</th>
+                    <th onclick="sortTable('pollutant')">空氣污染指標物</th>
+                    <th onclick="sortTable('status')">狀態</th>
+                    <th onclick="sortTable('so2')">二氧化硫（ppb）</th>
+                    <th onclick="sortTable('co')">一氧化碳（ppm）</th>
+                    <th onclick="sortTable('o3')">臭氧（ppb）</th>
+                    <th onclick="sortTable('pm10')">懸浮微粒（μg/m³）</th>
+                    <th onclick="sortTable('pm2.5')">細懸浮微粒（μg/m³）</th>
+                    <th onclick="sortTable('publishtime')">資料發布時間</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 數據將動態填充在這裡 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let airQualityData = [];
+        let currentSortField = ''; // 當前排序的欄位
+        let currentSortOrder = 'asc'; // 當前排序順序 (升序或降序)
+
+        // 使用 fetch API 來獲取數據
+        fetch('https://data.moenv.gov.tw/api/v2/aqx_p_432?api_key=e8dd42e6-9b8b-43f8-991e-b3dee723a52d&limit=1000&sort=ImportDate desc&format=JSON')
+            .then(response => response.json())
+            .then(data => {
+                airQualityData = data.records;
+                renderTable(airQualityData); // 顯示所有數據
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('dataTable').style.display = 'table';
+            })
+            .catch(error => {
+                console.error('獲取數據時發生錯誤:', error);
+                document.getElementById('loadingMessage').textContent = '數據載入失敗，請稍後重試。';
+            });
+
+        // 顯示數據表格
+        function renderTable(data) {
+            const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // 清空表格
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.sitename || 'N/A'}</td>
+                    <td>${item.county || 'N/A'}</td>
+                    <td>${item.aqi || 'N/A'}</td>
+                    <td>${item.pollutant || 'N/A'}</td>
+                    <td>${item.status || 'N/A'}</td>
+                    <td>${item.so2 || 'N/A'}</td>
+                    <td>${item.co || 'N/A'}</td>
+                    <td>${item.o3 || 'N/A'}</td>
+                    <td>${item.pm10 || 'N/A'}</td>
+                    <td>${item['pm2.5'] || 'N/A'}</td>
+                    <td>${item.publishtime || 'N/A'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 搜尋功能
+        function searchData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = airQualityData.filter(item => {
+                return (item.sitename && item.sitename.toLowerCase().includes(query)) ||
+                       (item.county && item.county.toLowerCase().includes(query));
+            });
+            renderTable(filteredData);
+        }
+
+        // 排序函數
+        function sortTable(field) {
+            if (currentSortField === field) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc'; // 改變排序順序
+            } else {
+                currentSortField = field;
+                currentSortOrder = 'asc'; // 初始為升序
+            }
+
+            const sortedData = airQualityData.sort((a, b) => {
+                let aValue = a[field];
+                let bValue = b[field];
+
+                // 確保數據為數字或字符串
+                if (typeof aValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                    bValue = bValue.toLowerCase();
+                }
+
+                if (currentSortOrder === 'asc') {
+                    return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+                } else {
+                    return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+                }
+            });
+
+            renderTable(sortedData);
+        }
+    </script>
+</body>
+</html>

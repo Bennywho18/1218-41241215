@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF 排名查詢</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+            color: white;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #00bcd4;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar .menu {
+            display: flex;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            cursor: pointer;  /* 設置指標為可點擊 */
+        }
+
+        #search {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">API-Get應用及Json資料</div>
+        <nav class="menu">
+            <a href="index.html">Home</a>
+            <a href="stock.html">股市</a>
+            <a href="Air.html">空氣品質</a>
+            <a href="Brokerage.html">ETF</a>
+        </nav>
+    </header>
+
+    <div class="content" style="padding: 20px;">
+        <h1>ETF 排名查詢</h1>
+        <!-- 搜尋框 -->
+        <div id="search">
+            <label for="query">查詢 (代碼/名稱): </label>
+            <input type="text" id="query" placeholder="輸入代碼或名稱" />
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>股票代號</th>
+                    <th>股票名稱</th>
+                    <th id="stockTradingCountHeader">股票交易戶數</th>
+                    <th>ETF代號</th>
+                    <th>ETF名稱</th>
+                    <th id="etfTradingCountHeader">ETF交易戶數</th>
+                </tr>
+            </thead>
+            <tbody id="apiData">
+                <!-- API 資料將顯示在這裡 -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let apiData = [];
+
+        // 使用 fetch 函式獲取 API 資料
+        fetch('https://openapi.twse.com.tw/v1/ETFReport/ETFRank')
+            .then(response => response.json())  // 將回應轉換成 JSON
+            .then(data => {
+                apiData = data;
+                displayData(apiData);  // 顯示所有資料
+            })
+            .catch(error => {
+                console.error('錯誤:', error);
+                alert('無法取得資料');
+            });
+
+        // 顯示資料
+        function displayData(data) {
+            const tableBody = document.getElementById('apiData');
+            tableBody.innerHTML = '';  // 清空表格
+
+            // 遍歷資料並顯示在表格中
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.No}</td>
+                    <td>${item.STOCKsSecurityCode}</td>
+                    <td>${item.STOCKsName}</td>
+                    <td>${item.STOCKsNumberofTradingAccounts}</td>
+                    <td>${item.ETFsSecurityCode}</td>
+                    <td>${item.ETFsName}</td>
+                    <td>${item.ETFsNumberofTradingAccounts}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 監聽查詢框的輸入
+        document.getElementById('query').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+
+            // 篩選資料
+            const filteredData = apiData.filter(item => {
+                const stockCode = item.STOCKsSecurityCode.toLowerCase();
+                const stockName = item.STOCKsName.toLowerCase();
+                const etfCode = item.ETFsSecurityCode.toLowerCase();
+                const etfName = item.ETFsName.toLowerCase();
+
+                return stockCode.includes(query) || stockName.includes(query) ||
+                       etfCode.includes(query) || etfName.includes(query);
+            });
+
+            // 顯示篩選後的資料
+            displayData(filteredData);
+        });
+
+        // 按下 "股票交易戶數" 列進行排序
+        let stockTradingCountSortOrder = true; // true: 遞增, false: 遞減
+        document.getElementById('stockTradingCountHeader').addEventListener('click', function() {
+            stockTradingCountSortOrder = !stockTradingCountSortOrder;
+            apiData.sort((a, b) => {
+                return stockTradingCountSortOrder
+                    ? a.STOCKsNumberofTradingAccounts - b.STOCKsNumberofTradingAccounts
+                    : b.STOCKsNumberofTradingAccounts - a.STOCKsNumberofTradingAccounts;
+            });
+            displayData(apiData);  // 重新顯示排序後的資料
+        });
+
+        // 按下 "ETF交易戶數" 列進行排序
+        let etfTradingCountSortOrder = true; // true: 遞增, false: 遞減
+        document.getElementById('etfTradingCountHeader').addEventListener('click', function() {
+            etfTradingCountSortOrder = !etfTradingCountSortOrder;
+            apiData.sort((a, b) => {
+                return etfTradingCountSortOrder
+                    ? a.ETFsNumberofTradingAccounts - b.ETFsNumberofTradingAccounts
+                    : b.ETFsNumberofTradingAccounts - a.ETFsNumberofTradingAccounts;
+            });
+            displayData(apiData);  // 重新顯示排序後的資料
+        });
+    </script>
+</body>
+</html>

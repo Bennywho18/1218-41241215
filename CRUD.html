@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD</title>
+    <!-- 引入 SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.9/dist/sweetalert2.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+            color: white;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #00bcd4;
+        }
+
+        .form-container {
+            padding: 2rem;
+            max-width: 600px;
+            margin: 2rem auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-container input,
+        .form-container button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .form-container input {
+            background-color: #fafafa;
+        }
+
+        .form-container button {
+            background-color: #333;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-container button:hover {
+            background-color: #00bcd4;
+        }
+
+        .response {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #e1e1e1;
+            border-radius: 4px;
+        }
+
+        .todo-list {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-list h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        /* 卡片樣式 */
+        .todo-card {
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            padding: 16px;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .todo-card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .todo-card .task {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .todo-card .status {
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .todo-card .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .todo-card .edit-btn {
+            background-color: #f0ad4e;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .todo-card .edit-btn:hover {
+            background-color: #ec971f;
+        }
+
+        .todo-list ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        @media (max-width: 768px) {
+            .todo-list {
+                padding: 1.5rem;
+            }
+
+            .todo-card {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 1rem;
+                margin: 1rem auto;
+            }
+
+            .form-container input,
+            .form-container button {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+
+            .todo-card {
+                padding: 10px;
+            }
+
+            .todo-card .task {
+                font-size: 1rem;
+            }
+
+            .todo-card .status {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">API-Get應用及Json資料</div>
+        <nav class="menu">
+            <a href="index.html">Home</a>
+            <a href="stock.html">股市</a>
+            <a href="Air.html">空氣品質</a>
+            <a href="Brokerage.html">ETF</a>
+            <a href="CRUD.html">CRUD</a>
+        </nav>
+    </header>
+
+    <div class="form-container">
+        <h2>新增任務</h2>
+        <form id="task-form">
+            <!-- 學號固定為 41241215，且不可編輯 -->
+            <input type="text" id="student_id" value="41241215" readonly>
+            <input type="text" id="task" placeholder="請輸入任務" required>
+            <button type="submit">提交任務</button>
+        </form>
+        
+        <div id="response-container" class="response" style="display: none;">
+            <p><strong>回應:</strong></p>
+            <pre id="response-text"></pre>
+        </div>
+    </div>
+
+    <!-- 顯示學生代辦事項 -->
+    <div class="todo-list">
+        <h2>當前代辦事項</h2>
+        <ul id="todo-list-container"></ul>
+    </div>
+
+    <!-- 引入 SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.9/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        // 提交任務的功能
+        document.getElementById('task-form').addEventListener('submit', function(event) {
+            event.preventDefault();  // 防止表單刷新頁面
+
+            // 取得學號（已固定）和任務資料
+            const student_id = document.getElementById('student_id').value;
+            const task = document.getElementById('task').value;
+
+            const data = {
+                student_id: student_id,
+                task: task
+            };
+
+            // 發送 POST 請求
+            fetch('https://nfutest.pythonanywhere.com/todos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 顯示回應資料
+                const responseContainer = document.getElementById('response-container');
+                const responseText = document.getElementById('response-text');
+                
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseContainer.style.display = 'block';
+
+                // 重設表單，保持學號固定
+                document.getElementById('task-form').reset();
+                document.getElementById('student_id').value = '41241215';  // 確保學號固定
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('發生錯誤，請稍後再試');
+            });
+        });
+
+        // 載入當前學生的所有代辦事項
+        // 載入當前學生的所有代辦事項
+// 載入當前學生的所有代辦事項
+// 載入當前學生的所有代辦事項
+// 載入當前學生的所有代辦事項
+function loadTodos() {
+    const student_id = '41241215';  // 固定學號
+
+    // 發送 GET 請求以獲取代辦事項
+    fetch(`https://nfutest.pythonanywhere.com/todos?student_id=${student_id}`)
+    .then(response => response.json())
+    .then(data => {
+        const todoListContainer = document.getElementById('todo-list-container');
+        todoListContainer.innerHTML = ''; // 清空之前的代辦事項
+
+        if (data.todos && data.todos.length > 0) {
+            data.todos.forEach(todo => {
+                const todoItem = document.createElement('li');
+                todoItem.classList.add('todo-card');  // 加入卡片樣式
+
+                const taskElement = document.createElement('div');
+                taskElement.classList.add('task');
+                taskElement.textContent = todo.task;
+
+                const statusElement = document.createElement('div');
+                statusElement.classList.add('status');
+                statusElement.textContent = todo.completed ? '已完成' : '未完成';
+
+                // 編輯按鈕
+                const editButton = document.createElement('button');
+                editButton.textContent = '編輯';
+                editButton.classList.add('edit-btn');
+                editButton.addEventListener('click', function() {
+                    // 編輯代辦事項
+                    editTodo(todo.id, todo.task, todo.completed);
+                });
+
+                // 刪除按鈕 (獨立於編輯按鈕)
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '刪除';
+                deleteButton.classList.add('delete-btn'); // 新的刪除按鈕樣式
+                deleteButton.addEventListener('click', function() {
+                    // 觸發刪除代辦事項
+                    deleteTodo(todo.id);
+                });
+
+                // 根據任務完成狀態設定樣式
+                if (todo.completed) {
+                    taskElement.classList.add('completed');
+                }
+
+                // 組合元素並顯示
+                todoItem.appendChild(taskElement);
+                todoItem.appendChild(statusElement);
+                todoItem.appendChild(editButton);
+                todoItem.appendChild(deleteButton);  // 添加刪除按鈕
+
+                todoListContainer.appendChild(todoItem);
+            });
+        } else {
+            todoListContainer.innerHTML = '<li>沒有代辦事項。</li>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('無法載入代辦事項，請稍後再試');
+    });
+}
+
+// 編輯代辦事項
+function editTodo(id, task, completed) {
+    // 顯示編輯表單
+    Swal.fire({
+        title: '編輯任務',
+        html: `
+            <input type="text" id="new-task" class="swal2-input" value="${task}" placeholder="任務名稱">
+            <label for="completed-checkbox">是否已完成</label>
+            <input type="checkbox" id="completed-checkbox" ${completed ? 'checked' : ''}>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '更新',
+        cancelButtonText: '取消',
+        preConfirm: () => {
+            const newTask = document.getElementById('new-task').value;
+            const newCompleted = document.getElementById('completed-checkbox').checked;
+            return { newTask, newCompleted };
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            const { newTask, newCompleted } = result.value;
+
+            // 更新代辦事項
+            const data = {
+                student_id: '41241215',
+                task: newTask,
+                completed: newCompleted
+            };
+
+            fetch(`https://nfutest.pythonanywhere.com/todos/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.fire('成功!', '代辦事項已更新', 'success');
+                loadTodos();  // 重新載入代辦事項
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('錯誤', '更新代辦事項失敗，請稍後再試', 'error');
+            });
+        }
+    });
+}
+
+// 刪除代辦事項
+function deleteTodo(id) {
+    // 顯示確認刪除的提示
+    Swal.fire({
+        title: '你確定要刪除這個任務嗎?',
+        text: "這個操作無法恢復。",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '是的，刪除!',
+        cancelButtonText: '取消'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const data = {
+                student_id: '41241215'
+            };
+
+            // 發送 DELETE 請求以刪除代辦事項
+            fetch(`https://nfutest.pythonanywhere.com/todos/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.fire('已刪除!', '代辦事項已被刪除', 'success');
+                loadTodos();  // 重新載入代辦事項
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('錯誤', '刪除代辦事項失敗，請稍後再試', 'error');
+            });
+        }
+    });
+}
+
+// 每 10 秒自動刷新代辦事項
+setInterval(loadTodos, 100);
+
+// 頁面加載時立即載入一次代辦事項
+loadTodos();
+
+    </script>
+</body>
+</html>

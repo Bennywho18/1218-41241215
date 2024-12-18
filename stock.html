@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股市數據搜尋</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+            color: white;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #00bcd4;
+        }
+
+        .navbar .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar .menu {
+            display: flex;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            margin-bottom: 20px;
+            width: 200px;
+        }
+
+        .sort-icon {
+            margin-left: 5px;
+            font-size: 30px;
+            color: #333; /* 更新顏色為較深的顏色 */
+        }
+
+        .sort-asc::after {
+            content: " ↑";
+            color: #007bff; /* 升序圖標顏色 */
+        }
+
+        .sort-desc::after {
+            content: " ↓";
+            color: #007bff; /* 降序圖標顏色 */
+        }
+        .content {
+            margin-top: 20px;
+            padding: 0 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">API-Get應用及Json資料</div>
+        <nav class="menu">
+            <a href="index.html">Home</a>
+            <a href="stock.html">股市</a>
+            <a href="Air.html">空氣品質</a>
+            <a href="Brokerage.html">ETF</a>
+        </nav>
+    </header>
+
+    <div class="content">
+    <h1>台灣股市數據搜尋</h1>
+    
+    <label for="searchInput">搜尋代碼或名稱：</label>
+    <input type="text" id="searchInput" placeholder="輸入代碼或名稱搜尋" onkeyup="searchStock()">
+    
+    <table id="stockTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">代碼 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(1)">公司名稱 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(2)">成交量 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(3)">成交金額 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(4)">開盤價 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(5)">最高價 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(6)">最低價 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(7)">收盤價 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(8)">漲跌幅 <span class="sort-icon"></span></th>
+                <th onclick="sortTable(9)">成交筆數 <span class="sort-icon"></span></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 數據將動態填充在這裡 -->
+        </tbody>
+    </table>
+
+    <script>
+        let stockData = [];
+        let sortOrder = [null, null, null, null, null, null, null, null, null, null]; // 排序狀態，null 表示未排序
+
+        // 使用 fetch API 來獲取資料
+        fetch('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
+            .then(response => response.json())
+            .then(data => {
+                stockData = data;
+                renderTable(data);  // 顯示所有資料
+            })
+            .catch(error => {
+                console.error('獲取資料時發生錯誤:', error);
+            });
+
+        // 顯示資料
+        function renderTable(data) {
+            const tableBody = document.getElementById('stockTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';  // 清空表格
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.Code}</td>
+                    <td>${item.Name}</td>
+                    <td>${item.TradeVolume}</td>
+                    <td>${item.TradeValue}</td>
+                    <td>${item.OpeningPrice}</td>
+                    <td>${item.HighestPrice}</td>
+                    <td>${item.LowestPrice}</td>
+                    <td>${item.ClosingPrice}</td>
+                    <td>${item.Change}</td>
+                    <td>${item.Transaction}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            updateSortIcons(); // 更新排序圖標
+        }
+
+        // 更新排序圖標
+        function updateSortIcons() {
+            const headers = document.querySelectorAll('th');
+            headers.forEach((header, index) => {
+                const icon = header.querySelector('.sort-icon');
+                icon.className = 'sort-icon'; // 重置圖標樣式
+                if (sortOrder[index] === 'asc') {
+                    icon.classList.add('sort-asc');
+                } else if (sortOrder[index] === 'desc') {
+                    icon.classList.add('sort-desc');
+                }
+            });
+        }
+
+        // 搜尋功能
+        function searchStock() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = stockData.filter(item => {
+                return item.Code.toLowerCase().includes(query) || item.Name.toLowerCase().includes(query);
+            });
+            renderTable(filteredData);
+        }
+
+        // 排序功能
+        function sortTable(columnIndex) {
+            const order = sortOrder[columnIndex] === 'asc' ? 'desc' : 'asc'; // 切換排序順序
+            sortOrder[columnIndex] = order;
+
+            const sortedData = [...stockData].sort((a, b) => {
+                const aValue = a[Object.keys(a)[columnIndex]];
+                const bValue = b[Object.keys(b)[columnIndex]];
+                if (order === 'asc') {
+                    return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                } else {
+                    return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                }
+            });
+
+            renderTable(sortedData);
+        }
+    </script>
+</body>
+</html>
